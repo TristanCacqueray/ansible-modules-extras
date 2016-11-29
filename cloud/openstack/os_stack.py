@@ -41,6 +41,13 @@ options:
       choices: ['present', 'absent']
       required: false
       default: present
+    update:
+      description:
+        - Indicate whenever the stack is updated
+      choices: ['yes', 'no']
+      required: false
+      default: yes
+      version_added: "2.3"
     name:
       description:
         - Name of the stack that should be created, name could be char and digit, no space
@@ -209,6 +216,7 @@ def main():
         rollback=dict(default=False, type='bool'),
         timeout=dict(default=3600, type='int'),
         state=dict(default='present', choices=['absent', 'present']),
+        update=dict(default='yes', choices=['yes', 'no'])
     )
 
     module_kwargs = openstack_module_kwargs()
@@ -237,11 +245,13 @@ def main():
                                                           cloud))
 
         if state == 'present':
+            changed = True
             if not stack:
                 stack = _create_stack(module, stack, cloud)
-            else:
+            elif module.params['update'] == 'yes':
                 stack = _update_stack(module, stack, cloud)
-            changed = True
+            else:
+                changed = False
             module.exit_json(changed=changed,
                              stack=stack,
                              id=stack.id)
